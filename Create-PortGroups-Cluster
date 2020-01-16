@@ -1,0 +1,28 @@
+# Variables
+$clustername = ""
+$vSwitchName = "vSwitch0"
+$VlanIDs = @( 1,2,3)
+$VlanNames = @("VLAN1", "VLAN2", "VLAN3")
+
+# Internal Variables
+$cluster = Get-Cluster -Name $clustername
+$esxhosts = $cluster | Get-VMHost -State "Maintenance"
+
+#Verify Variables
+if( $VlanIDs.Length -ne $VlanNames.Length) {
+    Write-Error -Message "Verify input VLANs. Number of elements is different."
+    exit
+    }
+
+# Adding VLANs
+foreach ($esxhost in $esxhosts) {
+    #Set-VMHost $esxhost -State Maintenance -WhatIf
+    if ($esxhost.ConnectionState -eq "Maintenance") {
+        $vSwitch =  Get-VirtualSwitch -VMHost $esxhost -Name 
+        for( $i = 0; $i -lt $VlanIDs.Length; i++ ){
+            New-VirtualPortGroup -Name $VlanNames[$i] -VLanId $VlanIDs[$i] -VirtualSwitch $vSwitch -Confirm
+            }
+    }else{
+        Write-Error "Host not in Maintenance Mode"
+    }
+}
